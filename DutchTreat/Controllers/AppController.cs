@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using DutchTreat.Data;
 using DutchTreat.Services;
 using DutchTreat.ViewModels;
 using Microsoft.AspNetCore.Mvc;
@@ -15,11 +16,13 @@ namespace DutchTreat.Controllers
     {
         private readonly ILogger logger;
         private readonly IMailService mailService;
+        private readonly IDutchRepository dutchRepository;
 
-        public AppController(ILogger<AppController> logger, IMailService mailService)
+        public AppController(ILogger<AppController> logger, IMailService mailService, IDutchRepository dutchRepository)
         {
             this.logger = logger;
             this.mailService = mailService;
+            this.dutchRepository = dutchRepository;
         }
 
         public IActionResult Index()
@@ -52,6 +55,12 @@ namespace DutchTreat.Controllers
         {
             ViewBag.Title = "About us";
             return View();
+        }
+
+        public IActionResult Shop()
+        {
+            var results = dutchRepository.GetAllProducts();
+            return View(results.ToList());
         }
     }
 }
