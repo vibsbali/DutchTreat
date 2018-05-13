@@ -10,15 +10,15 @@ namespace DutchTreat.Controllers
 {
     public class AppController : Controller
     {
-        private readonly ILogger logger;
-        private readonly IMailService mailService;
-        private readonly IDutchRepository dutchRepository;
+        private readonly ILogger _logger;
+        private readonly IMailService _mailService;
+        private readonly IDutchRepository _dutchRepository;
 
         public AppController(ILogger<AppController> logger, IMailService mailService, IDutchRepository dutchRepository)
         {
-            this.logger = logger;
-            this.mailService = mailService;
-            this.dutchRepository = dutchRepository;
+            _logger = logger;
+            _mailService = mailService;
+            _dutchRepository = dutchRepository;
         }
 
         public IActionResult Index()
@@ -34,16 +34,15 @@ namespace DutchTreat.Controllers
         [HttpPost]
         public IActionResult Contact(ContactViewModel model)
         {
-            logger.LogTrace(model.ToString());
+            _logger.LogTrace(model.ToString());
             if (ModelState.IsValid)
             {
                 //Send the mail
-                mailService.SendMessage(model.Name, model.Subject, model.Message);
+                _mailService.SendMessage(model.Name, model.Subject, model.Message);
                 ViewBag.UserMessage = "Mail Sent";
                 ModelState.Clear();
             }
             
-
             return View();
         }
 
@@ -56,7 +55,7 @@ namespace DutchTreat.Controllers
         [Authorize]
         public IActionResult Shop()
         {
-            var results = dutchRepository.GetAllProducts();
+            var results = _dutchRepository.GetAllProducts();
             return View(results.ToList());
         }
     }
