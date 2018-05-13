@@ -5,37 +5,60 @@ using System.Linq;
 using System.Threading.Tasks;
 using DutchTreat.Data.Entities;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
 using Newtonsoft.Json;
 
 namespace DutchTreat.Data
 {
-    public class DutchSeeder
-    {
-        private readonly DutchContext ctx;
-        private readonly IHostingEnvironment hostingEnvironment;
+   public class DutchSeeder
+   {
+      private readonly DutchContext _ctx;
+      private readonly IHostingEnvironment _hostingEnvironment;
+      private readonly UserManager<StoreUser> _userManager;
 
-        public DutchSeeder(DutchContext ctx, IHostingEnvironment hostingEnvironment)
-        {
-            this.ctx = ctx;
-            this.hostingEnvironment = hostingEnvironment;
-        }
+      public DutchSeeder(DutchContext ctx, IHostingEnvironment hostingEnvironment, UserManager<StoreUser> userManager)
+      {
+         _ctx = ctx;
+         _hostingEnvironment = hostingEnvironment;
+         _userManager = userManager;
+      }
 
-        public void Seed()
-        {
-            ctx.Database.EnsureCreated();
+      public async Task Seed()
+      {
+         _ctx.Database.EnsureCreated();
 
-            if (!ctx.Products.Any())
+         var user = await _userManager.FindByEmailAsync("test@test.com");
+
+         if (user == null)
+         {
+            user = new StoreUser
             {
-                var filePath = Path.Combine(hostingEnvironment.ContentRootPath, "Data/art.json");
-                var json = File.ReadAllText(filePath);
-                var products = JsonConvert.DeserializeObject<IEnumerable<Product>>(json);
-                ctx.Products.AddRange(products);
+               FirstName = "test",
+               LastName = "test",
+               UserName = "test@test.com",
+               Email = "test@test.com"
+            };
 
-                var order = new Order
-                {
-                    OrderDate = DateTime.Now,
-                    OrderNumber = "12345",
-                    Items = new List<OrderItem>
+            var result = await _userManager.CreateAsync(user, "P@ssw0rd!");
+            if (result != IdentityResult.Success)
+            {
+               throw new InvalidOperationException("Failed");
+            }
+         }
+
+          if (!_ctx.Products.Any())
+         {
+            var filePath = Path.Combine(_hostingEnvironment.ContentRootPath, "Data/art.json");
+            var json = File.ReadAllText(filePath);
+            var products = JsonConvert.DeserializeObject<IEnumerable<Product>>(json);
+            _ctx.Products.AddRange(products);
+
+            var order = new Order
+            {
+               OrderDate = DateTime.Now,
+               OrderNumber = "12345",
+               User = user,
+               Items = new List<OrderItem>
                     {
                         new OrderItem
                         {
@@ -44,11 +67,11 @@ namespace DutchTreat.Data
                             UnitPrice = products.First().Price
                         }
                     }
-                };
+            };
 
-                ctx.Orders.Add(order);
-                ctx.SaveChanges();
-            }
-        }
-    }
+            _ctx.Orders.Add(order);
+            _ctx.SaveChanges();
+         }
+      }
+   }
 }
