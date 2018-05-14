@@ -1,4 +1,5 @@
-﻿using AutoMapper;
+﻿using System.Text;
+using AutoMapper;
 using DutchTreat.Data;
 using DutchTreat.Data.Entities;
 using DutchTreat.Services;
@@ -9,18 +10,19 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 
 namespace DutchTreat
 {
    public class Startup
    {
-      private readonly IConfiguration config;
+      private readonly IConfiguration _config;
       private readonly IHostingEnvironment _hostingEnvironment;
 
       public Startup(IConfiguration config, IHostingEnvironment hostingEnvironment)
       {
-         this.config = config;
+         this._config = config;
          _hostingEnvironment = hostingEnvironment;
       }
       // This method gets called by the runtime. Use this method to add services to the container.
@@ -31,13 +33,23 @@ namespace DutchTreat
          services.AddIdentity<StoreUser, IdentityRole>(cfg => { cfg.User.RequireUniqueEmail = true; })
             .AddEntityFrameworkStores<DutchContext>();
 
+         //we are supporting both cookie and jwt 
          services.AddAuthentication()
             .AddCookie()
-            .AddJwtBearer();
+            .AddJwtBearer(cfg =>
+            {
+               cfg.TokenValidationParameters = new TokenValidationParameters()
+               {
+                  ValidIssuer = _config["Tokens:Issuer"],
+                  ValidAudience = _config["Tokens:Audience"],
+                  IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Tokens:Key"]))
+               };
+
+            });
 
          services.AddDbContext<DutchContext>(cfg =>
          {
-            cfg.UseSqlServer(config.GetConnectionString("DutchConnectionString"));
+            cfg.UseSqlServer(_config.GetConnectionString("DutchConnectionString"));
          });
 
          services.AddAutoMapper();
